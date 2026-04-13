@@ -1,0 +1,7 @@
+pip install prompt_toolkit  
+# optional, für bessere Shell
+
+# Basispakete (falls noch nicht installiert)
+sudo apt update
+sudo apt install -y python3-pip aircrack-ng metasploit-framework exploitdb apktool apksigner zipalign bluez openjdk-11-jdk
+pip3 install scapy cryptography shodan censys vt-py flask flask-cors jinja2 weasyprint scikit-learn pandas joblib requests beautifulsoup4

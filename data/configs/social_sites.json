@@ -1,0 +1,45 @@
+{
+  "social_media": {
+    "facebook": {
+      "url": "https://www.facebook.com/{}",
+      "api_endpoint": "https://graph.facebook.com/v12.0/",
+      "search_url": "https://www.facebook.com/search/people/?q={}",
+      "patterns": ["facebook.com", "fb.com"]
+    },
+    "twitter": {
+      "url": "https://twitter.com/{}",
+      "api_endpoint": "https://api.twitter.com/2/users/by/username/{}",
+      "search_url": "https://twitter.com/search?q={}&src=typed_query",
+      "patterns": ["twitter.com", "t.co"]
+    },
+    "instagram": {
+      "url": "https://www.instagram.com/{}/",
+      "api_endpoint": "https://www.instagram.com/api/v1/users/web_profile_info/?username={}",
+      "search_url": "https://www.instagram.com/web/search/topsearch/?query={}",
+      "patterns": ["instagram.com"]
+    },
+    "linkedin": {
+      "url": "https://www.linkedin.com/in/{}",
+      "search_url": "https://www.linkedin.com/search/results/people/?keywords={}",
+      "patterns": ["linkedin.com"]
+    },
+    "github": {
+      "url": "https://github.com/{}",
+      "api_endpoint": "https://api.github.com/users/{}",
+      "search_url": "https://github.com/search?q={}&type=users",
+      "patterns": ["github.com"]
+    }
+  },
+  "search_engines": {
+    "google": "https://www.google.com/search?q={}",
+    "bing": "https://www.bing.com/search?q={}",
+    "duckduckgo": "https://duckduckgo.com/?q={}",
+    "shodan": "https://www.shodan.io/search?query={}",
+    "haveibeenpwned": "https://haveibeenpwned.com/account/{}"
+  },
+  "data_breach_sites": {
+    "dehashed": "https://dehashed.com/search?query={}",
+    "leakcheck": "https://leakcheck.io/search?q={}",
+    "snusbase": "https://snusbase.com/"
+  }
+}

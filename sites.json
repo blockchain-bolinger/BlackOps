@@ -1,0 +1,92 @@
+{
+    "GitHub": {
+        "url": "https://github.com/{}",
+        "error_type": "status",
+        "error_msg": null
+    },
+    "Instagram": {
+        "url": "https://www.instagram.com/{}",
+        "error_type": "status",
+        "error_msg": null
+    },
+    "TikTok": {
+        "url": "https://www.tiktok.com/@{}",
+        "error_type": "status",
+        "error_msg": null
+    },
+    "Reddit": {
+        "url": "https://www.reddit.com/user/{}",
+        "error_type": "message",
+        "error_msg": "Sorry, nobody on Reddit goes by that name"
+    },
+    "YouTube": {
+        "url": "https://www.youtube.com/@{}",
+        "error_type": "status",
+        "error_msg": null
+    },
+    "Pinterest": {
+        "url": "https://www.pinterest.com/{}",
+        "error_type": "message",
+        "error_msg": "User not found"
+    },
+    "Steam": {
+        "url": "https://steamcommunity.com/id/{}",
+        "error_type": "message",
+        "error_msg": "The specified profile could not be found"
+    },
+    "Roblox": {
+        "url": "https://www.roblox.com/user.aspx?username={}",
+        "error_type": "status",
+        "error_msg": null
+    },
+    "Vimeo": {
+        "url": "https://vimeo.com/{}",
+        "error_type": "status",
+        "error_msg": null
+    },
+    "Patreon": {
+        "url": "https://www.patreon.com/{}",
+        "error_type": "status",
+        "error_msg": null
+    },
+    "SoundCloud": {
+        "url": "https://soundcloud.com/{}",
+        "error_type": "status",
+        "error_msg": null
+    },
+    "Spotify": {
+        "url": "https://open.spotify.com/user/{}",
+        "error_type": "status",
+        "error_msg": null
+    },
+    "DeviantArt": {
+        "url": "https://www.deviantart.com/{}",
+        "error_type": "status",
+        "error_msg": null
+    },
+    "Wikipedia": {
+        "url": "https://en.wikipedia.org/wiki/User:{}",
+        "error_type": "message",
+        "error_msg": "User account \"{}\" does not exist"
+    },
+    "HackerNews": {
+        "url": "https://news.ycombinator.com/user?id={}",
+        "error_type": "message",
+        "error_msg": "No such user"
+    },
+    "Freelancer": {
+        "url": "https://www.freelancer.com/u/{}",
+        "error_type": "status",
+        "error_msg": null
+    },
+    "Pastebin": {
+        "url": "https://pastebin.com/u/{}",
+        "error_type": "status",
+        "error_msg": null
+    },
+    "Wattpad": {
+        "url": "https://www.wattpad.com/user/{}",
+        "error_type": "status",
+        "error_msg": null
+    }
+}

@@ -1,0 +1,2 @@
+sudo apt install exploitdb  
+# oder searchsploit manuell installieren

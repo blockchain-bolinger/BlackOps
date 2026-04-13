@@ -1,0 +1,2 @@
+"""File hash plugin package."""
+

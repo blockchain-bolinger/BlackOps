@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>BlackOps WebUI</title>
+</head>
+<body>
+    <h1>BlackOps Framework Dashboard</h1>
+    <div id="tools"></div>
+    <script>
+        fetch('/api/v1/tools')
+            .then(r => r.json())
+            .then(tools => {
+                let html = '<h2>Verfügbare Tools</h2><ul>';
+                tools.forEach(t => html += `<li>${t}</li>`);
+                html += '</ul>';
+                document.getElementById('tools').innerHTML = html;
+            });
+    </script>
+</body>
+</html>

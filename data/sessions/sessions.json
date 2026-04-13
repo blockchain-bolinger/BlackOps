@@ -1,0 +1,192 @@
+{
+  "9693c6146653dbed": {
+    "id": "9693c6146653dbed",
+    "user": "test_user",
+    "tool": "SocialHunterV7",
+    "target": "test_target",
+    "description": "Integration test",
+    "start_time": "2026-02-21T11:25:04.722246",
+    "end_time": "2026-02-21T11:25:04.723974",
+    "status": "completed",
+    "data": {},
+    "logs": [
+      {
+        "timestamp": "2026-02-21T11:25:04.723093",
+        "type": "tool_execution",
+        "message": "SocialHunterV7 executed successfully"
+      }
+    ],
+    "commands": []
+  },
+  "d0e44bb70039b780": {
+    "id": "d0e44bb70039b780",
+    "user": "test_user",
+    "tool": "SocialHunterV7",
+    "target": "test_target",
+    "description": "Integration test",
+    "start_time": "2026-02-21T11:31:58.885594",
+    "end_time": "2026-02-21T11:31:58.888864",
+    "status": "completed",
+    "data": {},
+    "logs": [
+      {
+        "timestamp": "2026-02-21T11:31:58.886980",
+        "type": "tool_execution",
+        "message": "SocialHunterV7 executed successfully"
+      }
+    ],
+    "commands": []
+  },
+  "89823cd3fcdff698": {
+    "id": "89823cd3fcdff698",
+    "user": "test_user",
+    "tool": "SocialHunterV7",
+    "target": "test_target",
+    "description": "Integration test",
+    "start_time": "2026-02-21T13:20:09.200965",
+    "end_time": "2026-02-21T13:20:09.227021",
+    "status": "completed",
+    "data": {},
+    "logs": [
+      {
+        "timestamp": "2026-02-21T13:20:09.202995",
+        "type": "tool_execution",
+        "message": "SocialHunterV7 executed successfully"
+      }
+    ],
+    "commands": []
+  },
+  "eee1aca564afaeab": {
+    "id": "eee1aca564afaeab",
+    "user": "test_user",
+    "tool": "SocialHunterV7",
+    "target": "test_target",
+    "description": "Integration test",
+    "start_time": "2026-02-21T13:21:56.390319",
+    "end_time": "2026-02-21T13:21:56.395859",
+    "status": "completed",
+    "data": {},
+    "logs": [
+      {
+        "timestamp": "2026-02-21T13:21:56.392782",
+        "type": "tool_execution",
+        "message": "SocialHunterV7 executed successfully"
+      }
+    ],
+    "commands": []
+  },
+  "56f306a237df0767": {
+    "id": "56f306a237df0767",
+    "user": "test_user",
+    "tool": "SocialHunterV7",
+    "target": "test_target",
+    "description": "Integration test",
+    "start_time": "2026-02-21T13:22:39.769695",
+    "end_time": "2026-02-21T13:22:39.776739",
+    "status": "completed",
+    "data": {},
+    "logs": [
+      {
+        "timestamp": "2026-02-21T13:22:39.772936",
+        "type": "tool_execution",
+        "message": "SocialHunterV7 executed successfully"
+      }
+    ],
+    "commands": []
+  },
+  "a4c151350f1f5a7a": {
+    "id": "a4c151350f1f5a7a",
+    "user": "test_user",
+    "tool": "SocialHunterV7",
+    "target": "test_target",
+    "description": "Integration test",
+    "start_time": "2026-02-21T13:23:26.492945",
+    "end_time": "2026-02-21T13:23:26.511011",
+    "status": "completed",
+    "data": {},
+    "logs": [
+      {
+        "timestamp": "2026-02-21T13:23:26.496489",
+        "type": "tool_execution",
+        "message": "SocialHunterV7 executed successfully"
+      }
+    ],
+    "commands": []
+  },
+  "23cbe9dd80c172cc": {
+    "id": "23cbe9dd80c172cc",
+    "user": "test_user",
+    "tool": "SocialHunterV7",
+    "target": "test_target",
+    "description": "Integration test",
+    "start_time": "2026-02-21T13:35:50.965953",
+    "end_time": "2026-02-21T13:35:50.973469",
+    "status": "completed",
+    "data": {},
+    "logs": [
+      {
+        "timestamp": "2026-02-21T13:35:50.969435",
+        "type": "tool_execution",
+        "message": "SocialHunterV7 executed successfully"
+      }
+    ],
+    "commands": []
+  },
+  "1c09002d641694af": {
+    "id": "1c09002d641694af",
+    "user": "test_user",
+    "tool": "SocialHunterV7",
+    "target": "test_target",
+    "description": "Integration test",
+    "start_time": "2026-02-21T13:36:30.688321",
+    "end_time": "2026-02-21T13:36:30.696710",
+    "status": "completed",
+    "data": {},
+    "logs": [
+      {
+        "timestamp": "2026-02-21T13:36:30.692016",
+        "type": "tool_execution",
+        "message": "SocialHunterV7 executed successfully"
+      }
+    ],
+    "commands": []
+  },
+  "909f808bc126b030": {
+    "id": "909f808bc126b030",
+    "user": "test_user",
+    "tool": "SocialHunterV7",
+    "target": "test_target",
+    "description": "Integration test",
+    "start_time": "2026-02-21T14:34:37.589550",
+    "end_time": "2026-02-21T14:34:37.598554",
+    "status": "completed",
+    "data": {},
+    "logs": [
+      {
+        "timestamp": "2026-02-21T14:34:37.593664",
+        "type": "tool_execution",
+        "message": "SocialHunterV7 executed successfully"
+      }
+    ],
+    "commands": []
+  },
+  "1c7b7d88a6d546d6": {
+    "id": "1c7b7d88a6d546d6",
+    "user": "test_user",
+    "tool": "SocialHunterV7",
+    "target": "test_target",
+    "description": "Integration test",
+    "start_time": "2026-02-21T14:48:22.775679",
+    "end_time": "2026-02-21T14:48:22.789923",
+    "status": "completed",
+    "data": {},
+    "logs": [
+      {
+        "timestamp": "2026-02-21T14:48:22.782273",
+        "type": "tool_execution",
+        "message": "SocialHunterV7 executed successfully"
+      }
+    ],
+    "commands": []
+  }
+}

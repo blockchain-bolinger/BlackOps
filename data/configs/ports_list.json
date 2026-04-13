@@ -1,0 +1,42 @@
+{
+  "common_ports": [21, 22, 23, 25, 53, 80, 110, 111, 135, 139, 143, 443, 445, 993, 995, 1723, 3306, 3389, 5900, 8080],
+  
+  "services": {
+    "21": "FTP",
+    "22": "SSH",
+    "23": "Telnet",
+    "25": "SMTP",
+    "53": "DNS",
+    "80": "HTTP",
+    "110": "POP3",
+    "135": "MS RPC",
+    "139": "NetBIOS",
+    "143": "IMAP",
+    "443": "HTTPS",
+    "445": "SMB",
+    "993": "IMAPS",
+    "995": "POP3S",
+    "1723": "PPTP",
+    "3306": "MySQL",
+    "3389": "RDP",
+    "5900": "VNC",
+    "8080": "HTTP-Proxy"
+  },
+  
+  "vulnerable_ports": {
+    "21": ["Anonymous FTP", "Weak credentials"],
+    "22": ["Weak SSH keys", "Default credentials"],
+    "23": ["Clear text communication"],
+    "25": ["Open relay", "Spam"],
+    "80": ["Web vulnerabilities", "Directory traversal"],
+    "443": ["SSL/TLS misconfigurations", "Heartbleed"],
+    "445": ["EternalBlue", "SMB vulnerabilities"],
+    "3389": ["BlueKeep", "Weak RDP security"]
+  },
+  
+  "scan_order": {
+    "quick": [22, 80, 443, 3389, 8080],
+    "standard": [21, 22, 23, 25, 53, 80, 110, 139, 143, 443, 445, 3389, 5900, 8080],
+    "full": "1-1000"
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "cve_patterns": [
+    {
+      "cve": "CVE-2023-1234",
+      "service": "Apache httpd",
+      "version_pattern": "2.4.[0-8]",
+      "description": "Apache HTTP Server 2.4.0-2.4.8: Mod_proxy vulnerability"
+    },
+    {
+      "cve": "CVE-2023-5678",
+      "service": "OpenSSL",
+      "version_pattern": "1.1.1[ac-z]",
+      "description": "OpenSSL 1.1.1a-1.1.1z: Heartbleed-like bug"
+    }
+  ]
+}

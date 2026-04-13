@@ -1,0 +1,84 @@
+# Black Ops Framework .gitignore
+
+# Sensitive Data
+secrets.json
+blackops_config.json
+*.key
+*.pem
+*.crt
+.env
+.env.local
+.env.*.local
+
+# Logs
+logs/
+!logs/.gitkeep
+
+# Reports
+reports/
+!reports/.gitkeep
+
+# Payloads
+payloads/
+!payloads/.gitkeep
+
+# Backups
+backups/
+!backups/.gitkeep
+
+# Temporary files
+tmp/
+!tmp/.gitkeep
+
+# Cache
+.cache/
+*.cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Virtual Environment
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# System
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Binary files
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Test coverage
+.coverage
+htmlcov/
+
+# Jupyter
+.ipynb_checkpoints
+
+# OS specific
+*.lnk
+
+# Black Ops specific
+data/geoip/*.mmdb
+assets/images/screenshots/*

