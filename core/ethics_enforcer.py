@@ -4,15 +4,37 @@ Ethics Enforcement System für Black Ops Framework
 
 import json
 import hashlib
+import os
+import sys
 from datetime import datetime
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Callable
 from pathlib import Path
 
 class EthicsEnforcer:
-    def __init__(self, config_path: str = "data/configs/ethics_config.json"):
+    def __init__(
+        self,
+        config_path: str = "data/configs/ethics_config.json",
+        decision_provider: Optional[Callable[[Dict[str, str]], Optional[bool]]] = None,
+        interactive: Optional[bool] = None,
+    ):
         self.config_path = Path(config_path)
         self.config = self._load_config()
         self.violations = []
+        self.decision_provider = decision_provider
+        self.interactive = self._resolve_interactive(interactive)
+
+    def _resolve_interactive(self, interactive: Optional[bool]) -> bool:
+        if interactive is not None:
+            return interactive
+
+        env_value = os.getenv("BLACKOPS_ETHICS_INTERACTIVE")
+        if env_value is not None:
+            return env_value.strip().lower() in {"1", "true", "yes", "y", "on"}
+
+        try:
+            return bool(sys.stdin and sys.stdin.isatty())
+        except Exception:
+            return False
         
     def _load_config(self) -> Dict[str, Any]:
         """Lädt Ethics-Konfiguration"""
@@ -84,24 +106,60 @@ class EthicsEnforcer:
         
         return True
     
-    def get_approval(self, target: str, action: str, reason: str) -> bool:
+    def _finalize_approval(self, approved: bool, target: str, action: str, reason: str) -> bool:
+        if approved:
+            self._log_approval(target, action, reason)
+            return True
+        self._log_violation(f"Approval denied for: {target} - {action}")
+        return False
+
+    def get_approval(
+        self,
+        target: str,
+        action: str,
+        reason: str,
+        approved: Optional[bool] = None,
+        decision_provider: Optional[Callable[[Dict[str, str]], Optional[bool]]] = None,
+    ) -> bool:
         """Holt Genehmigung für Aktion"""
         if not self.config["approval_required"]:
             return True
-        
+
+        if approved is not None:
+            return self._finalize_approval(bool(approved), target, action, reason)
+
+        context = {"target": target, "action": action, "reason": reason}
+        provider = decision_provider or self.decision_provider
+        if provider is not None:
+            try:
+                decision = provider(context)
+            except Exception as exc:
+                self._log_violation(f"Decision provider failed for: {target} - {action}: {exc}")
+                return False
+            if decision is not None:
+                return self._finalize_approval(bool(decision), target, action, reason)
+
+        if not self.interactive:
+            self._log_violation(
+                f"Approval required but interactive confirmation unavailable: {target} - {action}"
+            )
+            return False
+
         print(f"\n[ETHICS APPROVAL REQUIRED]")
         print(f"Target: {target}")
         print(f"Action: {action}")
         print(f"Reason: {reason}")
         print(f"\nAre you authorized to perform this action? (yes/NO): ")
-        
-        response = input().strip().lower()
-        if response == "yes":
-            self._log_approval(target, action, reason)
-            return True
-        
-        self._log_violation(f"Approval denied for: {target} - {action}")
-        return False
+
+        try:
+            response = input().strip().lower()
+        except EOFError:
+            self._log_violation(
+                f"Approval required but input stream unavailable: {target} - {action}"
+            )
+            return False
+
+        return self._finalize_approval(response in {"yes", "y", "ja", "j"}, target, action, reason)
     
     def _load_blacklist(self) -> List[str]:
         """Lädt Blacklist"""

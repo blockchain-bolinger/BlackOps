@@ -33,13 +33,46 @@ class EncryptionConfig(BaseModel):
     key_rotation_days: int = 30
 
 
+class FrameworkConfig(BaseModel):
+    name: str = "Black Ops Framework v3.0"
+    version: str = "3.0.0"
+    author: str = "Security Team"
+    license: str = "MIT - For Authorized Testing Only"
+
+
+class LoggingConfig(BaseModel):
+    level: str = "INFO"
+    file: str = "logs/framework/blackops_main.log"
+    max_size_mb: int = 100
+    backup_count: int = 5
+    audit_log: str = "logs/audit/audit.log"
+
+
+class SecurityConfig(BaseModel):
+    encryption_enabled: bool = True
+    audit_trail: bool = True
+    auto_delete_temp: bool = True
+    session_timeout_minutes: int = 30
+
+
 class NetworkConfig(BaseModel):
     timeout: int = 30
     max_retries: int = 3
     proxy: Optional[str] = None
+    # Legacy-compatible fields still used by existing configs.
+    default_ports: str = "1-1000"
+    scan_timeout: int = 5
+    max_threads: int = 100
+    rate_limit_requests_per_second: int = 10
 
 
 class EthicsConfig(BaseModel):
+    show_warning: bool = True
+    require_confirmation: bool = True
+    require_agreement: bool = True
+    check_target_authorization: bool = True
+    log_all_actions: bool = True
+    max_scan_duration_hours: int = 24
     allowed_targets: list[str] = Field(default_factory=list)
     forbidden_actions: list[str] = Field(default_factory=list)
     require_approval: bool = True
@@ -61,13 +94,40 @@ class SecretConfig(BaseModel):
     file_path: str = "secrets.json"
 
 
+class ReportingConfig(BaseModel):
+    default_format: str = "pdf"
+    auto_generate: bool = True
+    template: str = "data/templates/report_templates/pentest_report.md"
+
+
+class ModuleConfig(BaseModel):
+    enabled: bool = True
+    require_confirmation: bool = False
+
+
+class OffensiveModuleConfig(ModuleConfig):
+    require_confirmation: bool = True
+
+
+class ModulesConfig(BaseModel):
+    recon: ModuleConfig = Field(default_factory=ModuleConfig)
+    offensive: ModuleConfig = Field(default_factory=OffensiveModuleConfig)
+    stealth: ModuleConfig = Field(default_factory=ModuleConfig)
+    intelligence: ModuleConfig = Field(default_factory=ModuleConfig)
+
+
 class AppConfig(BaseModel):
-    version: str = "2.2.0"
+    version: str = "3.0.0"
     debug: bool = False
     log_level: str = "INFO"
+    framework: FrameworkConfig = Field(default_factory=FrameworkConfig)
+    logging: LoggingConfig = Field(default_factory=LoggingConfig)
+    security: SecurityConfig = Field(default_factory=SecurityConfig)
     encryption: EncryptionConfig = Field(default_factory=EncryptionConfig)
     network: NetworkConfig = Field(default_factory=NetworkConfig)
     ethics: EthicsConfig = Field(default_factory=EthicsConfig)
+    reporting: ReportingConfig = Field(default_factory=ReportingConfig)
+    modules: ModulesConfig = Field(default_factory=ModulesConfig)
     observability: ObservabilityConfig = Field(default_factory=ObservabilityConfig)
     runtime: RuntimeConfig = Field(default_factory=RuntimeConfig)
     secrets: SecretConfig = Field(default_factory=SecretConfig)
@@ -86,16 +146,117 @@ class ConfigManager:
         if PYDANTIC_AVAILABLE:
             return AppConfig().model_dump()
         return {
-            "version": "2.2.0",
+            "version": "3.0.0",
             "debug": False,
             "log_level": "INFO",
+            "framework": {
+                "name": "Black Ops Framework v3.0",
+                "version": "3.0.0",
+                "author": "Security Team",
+                "license": "MIT - For Authorized Testing Only",
+            },
+            "logging": {
+                "level": "INFO",
+                "file": "logs/framework/blackops_main.log",
+                "max_size_mb": 100,
+                "backup_count": 5,
+                "audit_log": "logs/audit/audit.log",
+            },
+            "security": {
+                "encryption_enabled": True,
+                "audit_trail": True,
+                "auto_delete_temp": True,
+                "session_timeout_minutes": 30,
+            },
             "encryption": {"algorithm": "AES-256-GCM", "key_rotation_days": 30},
-            "network": {"timeout": 30, "max_retries": 3, "proxy": None},
-            "ethics": {"allowed_targets": [], "forbidden_actions": [], "require_approval": True},
+            "network": {
+                "timeout": 30,
+                "max_retries": 3,
+                "proxy": None,
+                "default_ports": "1-1000",
+                "scan_timeout": 5,
+                "max_threads": 100,
+                "rate_limit_requests_per_second": 10,
+            },
+            "ethics": {
+                "show_warning": True,
+                "require_confirmation": True,
+                "require_agreement": True,
+                "check_target_authorization": True,
+                "log_all_actions": True,
+                "max_scan_duration_hours": 24,
+                "allowed_targets": [],
+                "forbidden_actions": [],
+                "require_approval": True,
+            },
+            "reporting": {
+                "default_format": "pdf",
+                "auto_generate": True,
+                "template": "data/templates/report_templates/pentest_report.md",
+            },
+            "modules": {
+                "recon": {"enabled": True, "require_confirmation": False},
+                "offensive": {"enabled": True, "require_confirmation": True},
+                "stealth": {"enabled": True, "require_confirmation": False},
+                "intelligence": {"enabled": True, "require_confirmation": False},
+            },
             "observability": {"structured_logging": True, "metrics_enabled": True},
             "runtime": {"worker_threads": 4, "task_timeout_seconds": 300, "task_retries": 1},
             "secrets": {"provider": "file", "file_path": "secrets.json"},
         }
+
+    def _normalize_legacy_config(self, file_config: Dict[str, Any]) -> Dict[str, Any]:
+        if not isinstance(file_config, dict):
+            return {}
+
+        normalized = dict(file_config)
+
+        framework = normalized.get("framework")
+        if isinstance(framework, dict):
+            if "version" not in normalized and framework.get("version"):
+                normalized["version"] = framework["version"]
+
+        logging_cfg = normalized.get("logging")
+        if isinstance(logging_cfg, dict):
+            if "log_level" not in normalized and logging_cfg.get("level"):
+                normalized["log_level"] = logging_cfg["level"]
+
+        security_cfg = normalized.get("security")
+        network_cfg = normalized.get("network")
+        if not isinstance(network_cfg, dict):
+            network_cfg = {}
+        if "timeout" not in network_cfg and "scan_timeout" in network_cfg:
+            network_cfg["timeout"] = network_cfg["scan_timeout"]
+        if "max_retries" not in network_cfg:
+            network_cfg["max_retries"] = 3
+        normalized["network"] = network_cfg
+
+        runtime_cfg = normalized.get("runtime")
+        if not isinstance(runtime_cfg, dict):
+            runtime_cfg = {}
+        if "worker_threads" not in runtime_cfg and isinstance(network_cfg.get("max_threads"), int):
+            runtime_cfg["worker_threads"] = network_cfg["max_threads"]
+        if (
+            "task_timeout_seconds" not in runtime_cfg
+            and isinstance(security_cfg, dict)
+            and isinstance(security_cfg.get("session_timeout_minutes"), int)
+        ):
+            runtime_cfg["task_timeout_seconds"] = security_cfg["session_timeout_minutes"] * 60
+        normalized["runtime"] = runtime_cfg
+
+        ethics_cfg = normalized.get("ethics")
+        if not isinstance(ethics_cfg, dict):
+            ethics_cfg = {}
+        modules_cfg = normalized.get("modules")
+        if isinstance(modules_cfg, dict):
+            offensive_cfg = modules_cfg.get("offensive")
+            if isinstance(offensive_cfg, dict) and "require_confirmation" in offensive_cfg:
+                ethics_cfg.setdefault("require_confirmation", offensive_cfg["require_confirmation"])
+        if "require_approval" not in ethics_cfg and "require_agreement" in ethics_cfg:
+            ethics_cfg["require_approval"] = bool(ethics_cfg["require_agreement"])
+        normalized["ethics"] = ethics_cfg
+
+        return normalized
 
     def _load_file_config(self) -> Dict[str, Any]:
         if not self.config_path.exists():
@@ -164,7 +325,7 @@ class ConfigManager:
 
     def _load_config(self) -> Dict[str, Any]:
         defaults = self._default_config()
-        file_config = self._load_file_config()
+        file_config = self._normalize_legacy_config(self._load_file_config())
         env_config = self._load_env_overrides()
         merged = self._merge_dicts(defaults, file_config)
         merged = self._merge_dicts(merged, env_config)

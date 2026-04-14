@@ -16,6 +16,8 @@ from typing import Optional
 import colorama
 from colorama import Fore, Style
 
+from core.redaction_utils import redact_text
+
 colorama.init()
 
 _correlation_id = contextvars.ContextVar("correlation_id", default="-")
@@ -41,6 +43,19 @@ class CorrelationFilter(logging.Filter):
         return True
 
 
+class RedactionFilter(logging.Filter):
+    def filter(self, record: logging.LogRecord) -> bool:
+        record.msg = redact_text(str(record.msg))
+        record.args = ()
+        if getattr(record, "user", None):
+            record.user = redact_text(str(record.user))
+        if getattr(record, "action", None):
+            record.action = redact_text(str(record.action))
+        if getattr(record, "target", None):
+            record.target = redact_text(str(record.target))
+        return True
+
+
 class BlackOpsLogger:
     def __init__(self, name: str = "BlackOps", log_dir: str = "logs"):
         self.name = name
@@ -55,6 +70,7 @@ class BlackOpsLogger:
         self.logger.handlers = []
         self.logger.filters = []
         self.logger.addFilter(CorrelationFilter())
+        self.logger.addFilter(RedactionFilter())
 
         console_handler = logging.StreamHandler(sys.stdout)
         console_handler.setLevel(logging.INFO)
@@ -87,6 +103,7 @@ class BlackOpsLogger:
         audit_logger.handlers = []
         audit_logger.filters = []
         audit_logger.addFilter(CorrelationFilter())
+        audit_logger.addFilter(RedactionFilter())
 
         audit_dir = self.log_dir / "audit"
         audit_dir.mkdir(parents=True, exist_ok=True)
@@ -105,22 +122,27 @@ class BlackOpsLogger:
         return value
 
     def info(self, message: str) -> None:
-        self.logger.info(message)
+        self.logger.info(redact_text(message))
 
     def warning(self, message: str) -> None:
-        self.logger.warning(message)
+        self.logger.warning(redact_text(message))
 
     def error(self, message: str) -> None:
-        self.logger.error(message)
+        self.logger.error(redact_text(message))
 
     def critical(self, message: str) -> None:
-        self.logger.critical(message)
+        self.logger.critical(redact_text(message))
 
     def debug(self, message: str) -> None:
-        self.logger.debug(message)
+        self.logger.debug(redact_text(message))
 
     def audit(self, user: str, action: str, target: str, status: str = "SUCCESS") -> None:
-        extra = {"user": user, "action": action, "target": target, "status": status}
+        extra = {
+            "user": redact_text(user),
+            "action": redact_text(action),
+            "target": redact_text(target),
+            "status": status,
+        }
         self.audit_logger.info("", extra=extra)
 
     def print_banner(self) -> None:

@@ -6,14 +6,39 @@ import requests
 import json
 import re
 import time
+import sys
+from pathlib import Path
 from typing import Dict, List, Optional, Set
-from bs4 import BeautifulSoup
+try:
+    from bs4 import BeautifulSoup
+except Exception:
+    BeautifulSoup = None
 import concurrent.futures
+
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
 from core.blackops_logger import BlackOpsLogger
 from core.ethics_enforcer import EthicsEnforcer
 from core.secrets_manager import SecretsManager
 
 class SocialHunterV7:
+    CONFIG_PATH = Path("data/configs/social_sites.json")
+    EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+    SEARCH_TYPE_ALIASES = {
+        "username": "username",
+        "user": "username",
+        "nick": "username",
+        "nickname": "username",
+        "u": "username",
+        "email": "email",
+        "mail": "email",
+        "e-mail": "email",
+        "emal": "email",  # tolerant alias for common typo
+        "e": "email",
+    }
+
     def __init__(self):
         self.logger = BlackOpsLogger("SocialHunterV7")
         self.ethics = EthicsEnforcer()
@@ -27,10 +52,92 @@ class SocialHunterV7:
     def _load_config(self) -> Dict:
         """Lädt Konfiguration"""
         try:
-            with open('data/configs/social_sites.json', 'r') as f:
-                return json.load(f)
-        except:
-            return {}
+            with open(self.CONFIG_PATH, 'r', encoding='utf-8') as f:
+                loaded = json.load(f)
+        except Exception:
+            loaded = {}
+        return self._ensure_config_shape(loaded)
+
+    def _ensure_config_shape(self, config: Dict) -> Dict:
+        merged = dict(config or {})
+        merged.setdefault("social_media", {})
+        merged.setdefault("search_engines", {})
+        merged.setdefault("data_breach_sites", {})
+        for site_name, site_info in list(merged["social_media"].items()):
+            if not isinstance(site_info, dict):
+                merged["social_media"].pop(site_name, None)
+                continue
+            site_info.setdefault("enabled", True)
+            if "url" in site_info and isinstance(site_info["url"], str):
+                site_info["url"] = site_info["url"].strip()
+        return merged
+
+    def _save_config(self) -> None:
+        self.CONFIG_PATH.parent.mkdir(parents=True, exist_ok=True)
+        with open(self.CONFIG_PATH, "w", encoding="utf-8") as handle:
+            json.dump(self.config, handle, indent=2, ensure_ascii=False)
+
+    def _get_social_sites(self, enabled_only: bool = False) -> Dict[str, Dict]:
+        sites = self.config.get("social_media", {})
+        if not enabled_only:
+            return sites
+        return {
+            name: info for name, info in sites.items()
+            if isinstance(info, dict) and info.get("enabled", True)
+        }
+
+    def list_social_sites(self) -> Dict[str, Dict]:
+        return self._get_social_sites(enabled_only=False)
+
+    def add_social_site(self, site_name: str, url_template: str, enabled: bool = True) -> bool:
+        normalized_name = (site_name or "").strip().lower()
+        normalized_url = (url_template or "").strip()
+        if not normalized_name or not normalized_url:
+            return False
+        if "{}" not in normalized_url:
+            return False
+        if not normalized_url.startswith(("http://", "https://")):
+            return False
+
+        social_media = self.config.setdefault("social_media", {})
+        social_media[normalized_name] = {
+            "url": normalized_url,
+            "patterns": [],
+            "enabled": bool(enabled),
+        }
+        self._save_config()
+        return True
+
+    def remove_social_site(self, site_name: str) -> bool:
+        normalized_name = (site_name or "").strip().lower()
+        if not normalized_name:
+            return False
+        social_media = self.config.setdefault("social_media", {})
+        if normalized_name not in social_media:
+            return False
+        social_media.pop(normalized_name, None)
+        self._save_config()
+        return True
+
+    def set_site_enabled(self, site_name: str, enabled: bool) -> bool:
+        normalized_name = (site_name or "").strip().lower()
+        site = self.config.setdefault("social_media", {}).get(normalized_name)
+        if not isinstance(site, dict):
+            return False
+        site["enabled"] = bool(enabled)
+        self._save_config()
+        return True
+
+    @classmethod
+    def _looks_like_email(cls, target: str) -> bool:
+        return bool(cls.EMAIL_RE.match((target or "").strip()))
+
+    @classmethod
+    def normalize_search_type(cls, search_type: str, target: str) -> str:
+        normalized = cls.SEARCH_TYPE_ALIASES.get((search_type or "").strip().lower())
+        if normalized:
+            return normalized
+        return "email" if cls._looks_like_email(target) else "username"
     
     def search_username(self, username: str) -> Dict[str, List[Dict]]:
         """Sucht Username auf sozialen Medien"""
@@ -42,8 +149,8 @@ class SocialHunterV7:
         
         with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
             future_to_site = {}
-            
-            for site_name, site_info in self.config.get('social_media', {}).items():
+
+            for site_name, site_info in self._get_social_sites(enabled_only=True).items():
                 future = executor.submit(
                     self._check_site,
                     username,
@@ -71,14 +178,14 @@ class SocialHunterV7:
             response = self.session.get(url, timeout=10)
             
             if response.status_code == 200:
-                # Check for specific patterns
-                soup = BeautifulSoup(response.text, 'html.parser')
+                soup = BeautifulSoup(response.text, 'html.parser') if BeautifulSoup else None
+                page_text = soup.get_text(separator=" ", strip=True) if soup else response.text
                 
                 # Different checks for different sites
                 if site_name == 'github':
                     # Check for GitHub specific indicators
-                    if 'Page not found' not in soup.text and \
-                       'Not Found' not in soup.text:
+                    if 'Page not found' not in page_text and \
+                       'Not Found' not in page_text:
                         return {
                             'url': url,
                             'status': 'found',
@@ -87,7 +194,7 @@ class SocialHunterV7:
                 
                 elif site_name == 'twitter':
                     # Check for Twitter indicators
-                    if 'This account doesn\'t exist' not in soup.text:
+                    if 'This account doesn\'t exist' not in page_text:
                         return {
                             'url': url,
                             'status': 'found',
@@ -95,11 +202,11 @@ class SocialHunterV7:
                         }
                 
                 # Generic check
-                if len(soup.text) > 1000:  # Likely a real page
+                if len(page_text) > 1000:  # Likely a real page
                     return {
                         'url': url,
                         'status': 'found',
-                        'data': self._extract_generic_data(soup)
+                        'data': self._extract_generic_data(soup, response.text)
                     }
             
             elif response.status_code == 404:
@@ -115,6 +222,8 @@ class SocialHunterV7:
     
     def _extract_github_data(self, soup) -> Dict:
         """Extrahiert GitHub Daten"""
+        if soup is None:
+            return {}
         data = {}
         
         try:
@@ -157,7 +266,7 @@ class SocialHunterV7:
         
         try:
             # Twitter has complex structure, use patterns
-            text = soup.get_text()
+            text = soup.get_text() if soup is not None else ""
             
             # Extract name
             name_match = re.search(r'@[\w]+', text)
@@ -181,11 +290,13 @@ class SocialHunterV7:
         
         return data
     
-    def _extract_generic_data(self, soup) -> Dict:
+    def _extract_generic_data(self, soup, raw_html: str = "") -> Dict:
         """Extrahiert generische Daten"""
         data = {}
         
         try:
+            if soup is None:
+                return data
             # Extract title
             title = soup.title.string if soup.title else None
             if title:
@@ -318,7 +429,32 @@ class SocialHunterV7:
                     report += f"  - {item}\n"
         
         return report
+
+    def _print_sites(self) -> None:
+        sites = self.list_social_sites()
+        print("\nConfigured sites (Konfigurierte Seiten):")
+        if not sites:
+            print("  - none (keine)")
+            return
+        for name, info in sorted(sites.items()):
+            status = "enabled" if info.get("enabled", True) else "disabled"
+            print(f"  - {name}: {info.get('url', '-') } [{status}]")
     
+    def _search_and_print(self, target: str, search_type: str, output: Optional[str] = None) -> None:
+        resolved_type = self.normalize_search_type(search_type, target)
+        self.logger.print_banner()
+        print(f"Search type (Suchtyp): {resolved_type}")
+        if resolved_type == 'username':
+            results = self.search_username(target)
+        else:
+            results = self.search_email(target)
+        report = self.generate_report(target, results)
+        print(report)
+        if output:
+            with open(output, 'w', encoding='utf-8') as f:
+                f.write(report)
+            self.logger.info(f"Report saved to {output}")
+
     def run(self):
         """Hauptfunktion für CLI oder Menü"""
         import argparse
@@ -326,41 +462,88 @@ class SocialHunterV7:
 
         # Menü-Modus: keine CLI-Argumente vorhanden
         if len(sys.argv) <= 1:
-            self.logger.print_banner()
-            target = input("Target (username/email, leer = zurück): ").strip()
-            if not target:
-                return
-            search_type = input("Type (username/email) [username]: ").strip().lower() or "username"
-            if search_type not in ("username", "email"):
-                print("Invalid type.")
-                return
-            output = input("Output file (optional): ").strip() or None
+            while True:
+                self.logger.print_banner()
+                print("\n1) Search target (Ziel suchen)")
+                print("2) List sites (Seiten anzeigen)")
+                print("3) Add site (Seite hinzufügen)")
+                print("4) Remove site (Seite entfernen)")
+                print("5) Enable site (Seite aktivieren)")
+                print("6) Disable site (Seite deaktivieren)")
+                print("0) Back (Zurück)")
+                action = input("\nSelect action (Aktion wählen): ").strip()
+                if action in {"0", ""}:
+                    return
+                if action == "2":
+                    self._print_sites()
+                    input("\nEnter to continue...")
+                    continue
+                if action == "3":
+                    name = input("Site name (Seitenname): ").strip()
+                    url = input("URL template with {} (URL-Vorlage mit {}): ").strip()
+                    if self.add_social_site(name, url):
+                        print("Site added.")
+                    else:
+                        print("Could not add site. Use http(s)://... with {}.")
+                    input("\nEnter to continue...")
+                    continue
+                if action == "4":
+                    name = input("Site name to remove (Seite entfernen): ").strip()
+                    print("Removed." if self.remove_social_site(name) else "Site not found.")
+                    input("\nEnter to continue...")
+                    continue
+                if action == "5":
+                    name = input("Site name to enable (Seite aktivieren): ").strip()
+                    print("Enabled." if self.set_site_enabled(name, True) else "Site not found.")
+                    input("\nEnter to continue...")
+                    continue
+                if action == "6":
+                    name = input("Site name to disable (Seite deaktivieren): ").strip()
+                    print("Disabled." if self.set_site_enabled(name, False) else "Site not found.")
+                    input("\nEnter to continue...")
+                    continue
+                if action != "1":
+                    print("Invalid action.")
+                    time.sleep(1)
+                    continue
+                target = input("Target (username/email, empty = back): ").strip()
+                if not target:
+                    continue
+                search_type = input("Type (username/email/auto) [auto]: ").strip().lower() or "auto"
+                output = input("Output file (optional): ").strip() or None
+                self._search_and_print(target, search_type, output)
+                input("\nEnter to continue...")
         else:
             parser = argparse.ArgumentParser(description="Social Hunter v7 - OSINT Tool")
-            parser.add_argument("target", help="Username or email to search")
-            parser.add_argument("-t", "--type", choices=['username', 'email'], 
-                              default='username', help="Search type")
+            parser.add_argument("target", nargs="?", help="Username or email to search")
+            parser.add_argument("-t", "--type", default="auto", help="Search type: username/email/auto")
             parser.add_argument("-o", "--output", help="Output file")
+            parser.add_argument("--list-sites", action="store_true", help="List configured social sites")
+            parser.add_argument("--add-site", nargs=2, metavar=("NAME", "URL_TEMPLATE"), help="Add social site (url must include {})")
+            parser.add_argument("--remove-site", metavar="NAME", help="Remove social site")
+            parser.add_argument("--enable-site", metavar="NAME", help="Enable social site")
+            parser.add_argument("--disable-site", metavar="NAME", help="Disable social site")
             args = parser.parse_args()
-            target = args.target
-            search_type = args.type
-            output = args.output
-        
-        self.logger.print_banner()
-        
-        if search_type == 'username':
-            results = self.search_username(target)
-        else:
-            results = self.search_email(target)
-        
-        report = self.generate_report(target, results)
-        
-        print(report)
-        
-        if output:
-            with open(output, 'w') as f:
-                f.write(report)
-            self.logger.info(f"Report saved to {output}")
+            if args.list_sites:
+                self._print_sites()
+                return
+            if args.add_site:
+                name, url = args.add_site
+                ok = self.add_social_site(name, url)
+                print("Site added." if ok else "Could not add site. Use http(s)://... with {}.")
+                return
+            if args.remove_site:
+                print("Removed." if self.remove_social_site(args.remove_site) else "Site not found.")
+                return
+            if args.enable_site:
+                print("Enabled." if self.set_site_enabled(args.enable_site, True) else "Site not found.")
+                return
+            if args.disable_site:
+                print("Disabled." if self.set_site_enabled(args.disable_site, False) else "Site not found.")
+                return
+            if not args.target:
+                parser.error("target is required for search mode")
+            self._search_and_print(args.target, args.type, args.output)
 
 if __name__ == "__main__":
     SocialHunterV7().run()

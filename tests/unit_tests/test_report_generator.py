@@ -44,6 +44,34 @@ class TestReportGenerator(unittest.TestCase):
         self.assertEqual(delta_data["report_type"], "delta")
         self.assertEqual(delta_data["summary"]["added"], 1)
 
+    def test_report_redacts_sensitive_content(self):
+        gen = ReportGenerator()
+        report_path = gen.generate_pentest_report(
+            {
+                "target": "prod.example",
+                "tester": "qa",
+                "executive_summary": "token=supersecrettoken",
+                "technical_details": {"password": "UltraSecret123"},
+                "findings": [
+                    {
+                        "id": "F-SEC",
+                        "severity": "high",
+                        "vulnerability": "Auth header leak",
+                        "description": "Authorization: Bearer secretBearerValue12345",
+                    }
+                ],
+            },
+            format="json",
+        )
+        with open(report_path, "r", encoding="utf-8") as handle:
+            data = json.load(handle)
+
+        serialized = json.dumps(data)
+        self.assertNotIn("supersecrettoken", serialized)
+        self.assertNotIn("UltraSecret123", serialized)
+        self.assertNotIn("secretBearerValue12345", serialized)
+        self.assertIn("***REDACTED***", serialized)
+
 
 if __name__ == "__main__":
     unittest.main()

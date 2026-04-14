@@ -28,7 +28,26 @@ class SecretsManager:
         self.dotenv_path = Path(dotenv_path)
         if load_dotenv is not None:
             load_dotenv(dotenv_path=self.dotenv_path, override=False)
+        # Keep .env support even when python-dotenv is missing or partially unavailable.
+        self._load_dotenv_fallback()
         self._secrets = self._load_file_secrets()
+
+    def _load_dotenv_fallback(self) -> None:
+        if not self.dotenv_path.exists():
+            return
+        try:
+            with open(self.dotenv_path, "r", encoding="utf-8") as handle:
+                for raw_line in handle:
+                    line = raw_line.strip()
+                    if not line or line.startswith("#") or "=" not in line:
+                        continue
+                    key, value = line.split("=", 1)
+                    key = key.strip()
+                    value = value.strip().strip("'").strip('"')
+                    if key and key not in os.environ:
+                        os.environ[key] = value
+        except Exception:
+            return
 
     def _load_file_secrets(self) -> dict:
         if not self.path.exists():
@@ -77,5 +96,14 @@ class SecretsManager:
         with open(self.path, "w", encoding="utf-8") as handle:
             json.dump(self._secrets, handle, indent=2)
 
+    def _redact_all_values(self, value: Any) -> Any:
+        if isinstance(value, dict):
+            return {k: self._redact_all_values(v) for k, v in value.items()}
+        if isinstance(value, list):
+            return [self._redact_all_values(v) for v in value]
+        if isinstance(value, tuple):
+            return tuple(self._redact_all_values(v) for v in value)
+        return "***REDACTED***"
+
     def redacted(self) -> dict:
-        return {key: "***REDACTED***" for key in self._secrets}
+        return self._redact_all_values(self._secrets)

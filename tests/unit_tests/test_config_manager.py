@@ -1,3 +1,4 @@
+import json
 import os
 import tempfile
 import unittest
@@ -46,6 +47,26 @@ class TestConfigManager(unittest.TestCase):
         migrate = cm.migrate(target_version="2.3.0", dry_run=True)
         self.assertTrue(migrate["dry_run"])
         self.assertEqual(migrate["to_version"], "2.3.0")
+
+    def test_legacy_layout_is_mapped(self):
+        legacy = {
+            "framework": {"name": "Legacy", "version": "2.2.0"},
+            "logging": {"level": "WARNING"},
+            "security": {"session_timeout_minutes": 45},
+            "network": {"scan_timeout": 7, "max_threads": 64},
+            "ethics": {"require_agreement": False},
+            "modules": {"offensive": {"enabled": True, "require_confirmation": False}},
+        }
+        self.config_path.write_text(json.dumps(legacy), encoding="utf-8")
+
+        cm = ConfigManager(str(self.config_path))
+        self.assertEqual(cm.get("version"), "2.2.0")
+        self.assertEqual(cm.get("log_level"), "WARNING")
+        self.assertEqual(cm.get("network.timeout"), 7)
+        self.assertEqual(cm.get("runtime.worker_threads"), 64)
+        self.assertEqual(cm.get("runtime.task_timeout_seconds"), 2700)
+        self.assertFalse(cm.get("ethics.require_confirmation"))
+        self.assertFalse(cm.get("ethics.require_approval"))
 
 
 if __name__ == "__main__":

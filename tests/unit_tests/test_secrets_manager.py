@@ -37,7 +37,12 @@ class TestSecretsManager(unittest.TestCase):
         sm = SecretsManager(path=str(self.secrets_path), dotenv_path=str(self.dotenv_path))
         self.assertEqual(sm.get("shodan"), "dotenv-shodan")
 
+    def test_redacted_masks_nested_values(self):
+        sm = SecretsManager(path=str(self.secrets_path), dotenv_path=str(self.dotenv_path))
+        redacted = sm.redacted()
+        self.assertEqual(redacted["api_keys"]["haveibeenpwned"], "***REDACTED***")
+        self.assertEqual(redacted["openai_key"], "***REDACTED***")
+
 
 if __name__ == "__main__":
     unittest.main()
-

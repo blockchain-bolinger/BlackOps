@@ -1,6 +1,7 @@
 
 from core.tool_contract import ToolResult, ToolContext
 from tools.offensive.airstrike import AirStrike
+from typing import Dict
 
 class AirStrikePlugin:
     def __init__(self, context: ToolContext):
@@ -22,16 +23,20 @@ class AirStrikePlugin:
             "scan_type": {"type": "select", "options": ["tcp", "udp", "syn"], "description": "Scan-Typ"}
         }
 
-    def run(self, **kwargs) -> ToolResult:
+    def run(self, *args, **kwargs) -> ToolResult:
         try:
-            action = kwargs.get("action")
+            action = args[0] if args else kwargs.get("action")
             if action == "scan":
                 target = kwargs.get("target")
-                # ... (rest of scan logic)
-                results = self.tool.port_scan(target, None, kwargs.get("scan_type", "tcp"))
+                if not target:
+                    return ToolResult.failed("Missing required parameter: target")
+                ports = kwargs.get("ports")
+                results = self.tool.port_scan(target, ports, kwargs.get("scan_type", "tcp"))
                 return ToolResult.success(data=results)
             
             elif action == "arp":
+                if "target" not in kwargs or "gateway" not in kwargs:
+                    return ToolResult.failed("Missing required parameters: target and gateway")
                 self.tool.arp_spoof(
                     kwargs["target"], 
                     kwargs["gateway"], 
@@ -40,6 +45,8 @@ class AirStrikePlugin:
                 return ToolResult.success(data="ARP spoofing completed/stopped")
             
             elif action == "dos":
+                if "target" not in kwargs or "port" not in kwargs:
+                    return ToolResult.failed("Missing required parameters: target and port")
                 self.tool.dos_attack(
                     kwargs["target"], 
                     int(kwargs["port"]), 

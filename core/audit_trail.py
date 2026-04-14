@@ -7,7 +7,7 @@ import hashlib
 from datetime import datetime
 from typing import Dict, List, Optional
 from pathlib import Path
-import hashlib
+from core.redaction_utils import redact_data, redact_text
 
 class AuditTrail:
     def __init__(self):
@@ -40,19 +40,23 @@ class AuditTrail:
     def log_event(self, user: str, action: str, target: str, 
                   details: Dict = None, status: str = "SUCCESS") -> str:
         """Loggt ein Event"""
+        safe_user = redact_text(user)
+        safe_action = redact_text(action)
+        safe_target = redact_text(target)
+        safe_details = redact_data(details or {})
         event_id = hashlib.sha256(
-            f"{user}_{action}_{target}_{datetime.now().isoformat()}".encode()
+            f"{safe_user}_{safe_action}_{safe_target}_{datetime.now().isoformat()}".encode()
         ).hexdigest()[:16]
         
         event = {
             'id': event_id,
             'timestamp': datetime.now().isoformat(),
-            'user': user,
-            'action': action,
-            'target': target,
-            'details': details or {},
+            'user': safe_user,
+            'action': safe_action,
+            'target': safe_target,
+            'details': safe_details,
             'status': status,
-            'checksum': self._calculate_event_checksum(user, action, target, details)
+            'checksum': self._calculate_event_checksum(safe_user, safe_action, safe_target, safe_details)
         }
         
         self.entries.append(event)

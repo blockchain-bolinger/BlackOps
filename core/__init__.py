@@ -4,6 +4,7 @@ Enthält essentielle Komponenten für Konfiguration, Logging, Ethik und Session-
 """
 
 from .config_manager import ConfigManager
+from .execution_service import ExecutionService
 from .job_manager import JobManager
 from .metrics import MetricsCollector
 from .plugin_manager import PluginManager, PluginInterface
@@ -13,6 +14,7 @@ from .tool_contract import ToolContext, ToolResult, normalize_tool_result
 
 __all__ = [
     "ConfigManager",
+    "ExecutionService",
     "JobManager",
     "MetricsCollector",
     "PluginManager",

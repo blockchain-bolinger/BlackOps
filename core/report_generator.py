@@ -9,6 +9,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, List, Any
 from core.tool_contract import ToolResult
+from core.redaction_utils import redact_data, redact_text
 
 try:
     from reportlab.lib.pagesizes import A4
@@ -122,19 +123,19 @@ class ReportGenerator:
 
     def _build_schema(self, report_type: str, data: Dict[str, Any], report_id: str) -> Dict[str, Any]:
         findings = self._normalize_findings(data.get("findings", []))
-        return {
+        schema = {
             "schema_version": "1.0",
             "report_type": report_type,
             "report_id": report_id,
             "generated_at": datetime.now(timezone.utc).isoformat(),
             "metadata": {
-                "target": data.get("target", "N/A"),
-                "tester": data.get("tester", "N/A"),
-                "scope": data.get("scope", "N/A"),
-                "tools_used": data.get("tools_used", []),
+                "target": redact_text(str(data.get("target", "N/A"))),
+                "tester": redact_text(str(data.get("tester", "N/A"))),
+                "scope": redact_text(str(data.get("scope", "N/A"))),
+                "tools_used": redact_data(data.get("tools_used", [])),
             },
             "summary": {
-                "executive_summary": data.get("executive_summary", "No summary provided."),
+                "executive_summary": redact_text(str(data.get("executive_summary", "No summary provided."))),
                 "severity": self._severity_summary(findings),
                 "total_findings": len(findings),
                 "average_risk_score": round(
@@ -142,9 +143,10 @@ class ReportGenerator:
                 ),
             },
             "findings": findings,
-            "recommendations": data.get("recommendations", []),
-            "technical_details": data.get("technical_details", {}),
+            "recommendations": redact_data(data.get("recommendations", [])),
+            "technical_details": redact_data(data.get("technical_details", {})),
         }
+        return redact_data(schema)
 
     def generate_pentest_report(self, data: Dict[str, Any], format: str = "pdf") -> str:
         report_id = f"pentest_{datetime.now().strftime('%Y%m%d_%H%M%S_%f')}"
@@ -198,6 +200,7 @@ class ReportGenerator:
     def _write_report(self, report: Dict[str, Any], format: str, subdir: str) -> str:
         destination = self.reports_dir / subdir
         destination.mkdir(parents=True, exist_ok=True)
+        report = redact_data(report)
         report_id = report["report_id"]
         fmt = format.lower()
         if fmt == "json":

@@ -1,17 +1,31 @@
 #!/usr/bin/env python3
 from datetime import datetime, timezone
 from flask import Flask, render_template, jsonify, request, Response
-import subprocess
-import json
 import os
+from pathlib import Path
 
 from core.config_manager import ConfigManager
+from core.execution_service import ExecutionService
 from core.metrics import MetricsCollector
+from core.process_runner import SafeProcessRunner, ProcessRunnerError
+from core.redaction_utils import redact_data, redact_text
+from core.tool_contract import ToolResult
 
 app = Flask(__name__)
 app_start = datetime.now(timezone.utc)
 config_manager = ConfigManager()
 metrics_collector = MetricsCollector()
+base_dir = Path.cwd().resolve()
+tools_dir = (base_dir / "tools").resolve()
+process_runner = SafeProcessRunner(allowed_roots=[base_dir, tools_dir])
+
+
+def _build_execution_service():
+    return ExecutionService(
+        process_runner=process_runner,
+        base_dir=base_dir,
+        tools_dir=tools_dir,
+    )
 
 # In-Memory "Datenbank" für Sessions
 sessions = []
@@ -31,14 +45,30 @@ def list_tools():
 
 @app.route('/api/v1/run', methods=['POST'])
 def run_tool():
-    data = request.json
+    data = request.json or {}
     tool_path = data.get('tool')
     args = data.get('args', [])
+
     try:
-        result = subprocess.run(['python3', tool_path] + args, capture_output=True, text=True, timeout=30)
-        return jsonify({'stdout': result.stdout, 'stderr': result.stderr, 'returncode': result.returncode})
+        timeout = config_manager.get("runtime.task_timeout_seconds", 30)
+        service = _build_execution_service()
+        result = service.execute_tool(
+            tool_path,
+            args=args,
+            timeout=timeout,
+            cwd=base_dir,
+            capture_output=True,
+        )
+        payload = result.to_dict()
+        payload["errors"] = [redact_text(str(item)) for item in payload.get("errors", [])]
+        if isinstance(payload.get("data"), dict):
+            payload["data"] = redact_data(payload["data"])
+        status_code = service.http_status_for_result(result)
+        return jsonify(payload), status_code
+    except ProcessRunnerError as e:
+        return jsonify(ToolResult.failed(redact_text(str(e))).to_dict()), 400
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify(ToolResult.failed(redact_text(str(e))).to_dict()), 500
 
 @app.route('/api/v1/sessions', methods=['GET', 'POST'])
 def handle_sessions():
