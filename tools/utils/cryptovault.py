@@ -9,7 +9,7 @@ init(autoreset=True)
 class CryptoVault:
     def banner(self):
         os.system('clear')
-        print(f"""{Fore.MAGENTA}
+        print(rf"""{Fore.MAGENTA}
    ______                 __        _    __            ____ 
   / ____/________  ____  / /_____  | |  / /___ ___  __/ / /_
  / /   / ___/ __ \/ __ \/ __/ __ \ | | / / __ `/ / / / / __/

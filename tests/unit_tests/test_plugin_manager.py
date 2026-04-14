@@ -34,10 +34,13 @@ class DemoPlugin(PluginInterface):
         manager = PluginManager(plugin_dir=str(plugin_root.parent), required_api_version=1)
         plugins = manager.discover()
         self.assertIn("demo", plugins)
+        metadata = manager.get_plugin_metadata("demo")
+        self.assertIsNotNone(metadata)
+        self.assertTrue(metadata["compatible"])
+        self.assertEqual(metadata["name"], "demo")
         result = plugins["demo"].run(a=1)
         self.assertTrue(result["ok"])
 
 
 if __name__ == "__main__":
     unittest.main()
-

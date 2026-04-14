@@ -27,6 +27,17 @@ class PluginMetadata:
     compatible: bool = True
     error: str = ""
 
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "name": self.name,
+            "description": self.description,
+            "version": self.version,
+            "api_version": self.api_version,
+            "module_path": self.module_path,
+            "compatible": self.compatible,
+            "error": self.error,
+        }
+
 
 class PluginInterface:
     """Jedes Plugin muss mindestens `name()` und `run()` implementieren."""
@@ -52,6 +63,15 @@ class PluginInterface:
     def get_parameters(self) -> Dict[str, Dict[str, str]]:
         """Gibt ein Schema der benötigten Parameter zurück: {'name': {'type': 'str', 'description': '...'}}"""
         return {}
+
+    def manifest(self) -> Dict[str, Any]:
+        """Optionaler Maschinenlesbarer Plugin-Header."""
+        return {
+            "name": self.name(),
+            "description": self.description(),
+            "version": str(getattr(self, "version", "0.1.0")),
+            "api_version": int(getattr(self, "api_version", PLUGIN_API_VERSION)),
+        }
 
 
 class PluginManager:
@@ -94,6 +114,15 @@ class PluginManager:
         api_version = getattr(instance, "api_version", PLUGIN_API_VERSION)
         return int(api_version) == int(self.required_api_version)
 
+    @staticmethod
+    def _is_plugin_class(cls: type) -> bool:
+        return (
+            inspect.isclass(cls)
+            and cls is not PluginInterface
+            and issubclass(cls, PluginInterface)
+            and cls.__module__ not in {"core.plugin_manager"}
+        )
+
     def discover(self, context: Optional[Dict[str, Any]] = None) -> Dict[str, PluginInterface]:
         self._ensure_plugin_dir()
         self.plugins = {}
@@ -105,16 +134,17 @@ class PluginManager:
             try:
                 module, module_path = self._load_module(candidate)
                 for _, cls in inspect.getmembers(module, inspect.isclass):
-                    if not issubclass(cls, PluginInterface) or cls is PluginInterface:
+                    if not self._is_plugin_class(cls) or cls.__module__ != module.__name__:
                         continue
                     instance = cls()
-                    plugin_name = instance.name() or default_name
+                    manifest = instance.manifest() if hasattr(instance, "manifest") else {}
+                    plugin_name = str(manifest.get("name") or instance.name() or default_name)
                     compatible = self._is_compatible(instance)
                     meta = PluginMetadata(
                         name=plugin_name,
-                        description=instance.description(),
-                        version=str(getattr(instance, "version", "0.1.0")),
-                        api_version=int(getattr(instance, "api_version", PLUGIN_API_VERSION)),
+                        description=str(manifest.get("description") or instance.description()),
+                        version=str(manifest.get("version", getattr(instance, "version", "0.1.0"))),
+                        api_version=int(manifest.get("api_version", getattr(instance, "api_version", PLUGIN_API_VERSION))),
                         module_path=module_path,
                         compatible=compatible,
                         error="" if compatible else "Incompatible plugin API version",
@@ -146,10 +176,14 @@ class PluginManager:
     def get_plugin(self, name: str) -> Optional[PluginInterface]:
         return self.plugins.get(name)
 
+    def get_plugin_metadata(self, name: str) -> Optional[Dict[str, Any]]:
+        meta = self.metadata.get(name)
+        return meta.to_dict() if meta else None
+
     def list_plugins(self, include_incompatible: bool = False):
         if include_incompatible:
             return sorted(self.metadata.keys())
         return sorted(self.plugins.keys())
 
     def list_plugin_metadata(self):
-        return {k: vars(v) for k, v in self.metadata.items()}
+        return {k: v.to_dict() for k, v in sorted(self.metadata.items())}
