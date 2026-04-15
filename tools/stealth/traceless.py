@@ -23,7 +23,7 @@ class TraceLess:
 
     def banner(self):
         os.system('cls' if os.name == 'nt' else 'clear')
-        print(f"""{Fore.RED}
+        print(rf"""{Fore.RED}
   ______                      __                
  /_  __/________ _________   / /   ___  _____ _____
   / / / ___/ __ `/ ___/ _ \ / /   / _ \/ ___// ___/

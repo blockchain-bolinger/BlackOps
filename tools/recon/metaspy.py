@@ -11,7 +11,7 @@ class MetaSpy:
 
     def banner(self):
         os.system('cls' if os.name == 'nt' else 'clear')
-        print(f"""{Fore.MAGENTA}
+        print(rf"""{Fore.MAGENTA}
     __  ___      __aSsz   _____            
    /  |/  /___  / /_____ / ___/____  __  __
   / /|_/ / _ \/ __/ __ \\__ \/ __ \/ / / /

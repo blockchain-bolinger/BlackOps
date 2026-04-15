@@ -7,14 +7,48 @@ from __future__ import annotations
 
 import csv
 import json
+import os
+import uuid
 from pathlib import Path
 from typing import Any
 
+from core.evidence_store import EvidenceStore
 from core.tool_contract import ToolResult
+
+_EVIDENCE_STORE = EvidenceStore()
 
 
 def success_payload(tool_name: str, data: Any, **meta) -> dict:
-    return ToolResult.success(data=data, tool=tool_name, **meta).to_dict()
+    payload = ToolResult.success(data=data, tool=tool_name, **meta).to_dict()
+    if os.getenv("BLACKOPS_EVIDENCE_AUTO_RECORD", "1").strip().lower() in {"1", "true", "yes", "on"} and isinstance(data, dict):
+        try:
+            target = str(
+                data.get("target")
+                or data.get("domain")
+                or data.get("ip")
+                or data.get("email")
+                or data.get("username")
+                or data.get("host")
+                or ""
+            )
+            _EVIDENCE_STORE.record_snapshot(
+                source_tool=tool_name,
+                profile=str(meta.get("profile", "osint")),
+                correlation_id=str(meta.get("correlation_id") or payload["meta"].get("correlation_id", "-")),
+                run_id=str(meta.get("run_id") or payload["meta"].get("run_id") or uuid.uuid4()),
+                title=f"{tool_name} snapshot",
+                target=target,
+                severity=str(meta.get("severity", "info")),
+                category=str(meta.get("category", "snapshot")),
+                cwe=str(meta.get("cwe", "")),
+                cves=meta.get("cves"),
+                evidence=[data.get("evidence")] if data.get("evidence") else [],
+                notes=str(meta.get("notes", "")),
+                metadata={"payload_keys": list(data.keys())[:50], "tool_meta": meta},
+            )
+        except Exception:
+            pass
+    return payload
 
 
 def failed_payload(tool_name: str, error: str, **meta) -> dict:

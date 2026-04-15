@@ -1,19 +1,222 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>BlackOps WebUI</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>BlackOps Dashboard</title>
+    <style>
+        :root {
+            --bg: #08101f;
+            --panel: #111b31;
+            --panel-2: #0d1729;
+            --text: #e7eefc;
+            --muted: #9bb0d1;
+            --accent: #7dd3fc;
+            --accent-2: #a78bfa;
+            --danger: #fb7185;
+            --ok: #34d399;
+            --border: rgba(125, 211, 252, 0.18);
+        }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            min-height: 100vh;
+            background:
+                radial-gradient(circle at top left, rgba(167, 139, 250, 0.18), transparent 30%),
+                radial-gradient(circle at bottom right, rgba(125, 211, 252, 0.14), transparent 30%),
+                var(--bg);
+            color: var(--text);
+            font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        }
+        .wrap { max-width: 1280px; margin: 0 auto; padding: 28px; }
+        .hero {
+            display: grid;
+            grid-template-columns: 1.6fr 1fr;
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+        .panel {
+            background: linear-gradient(180deg, rgba(17, 27, 49, 0.96), rgba(13, 23, 41, 0.96));
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            padding: 20px;
+            box-shadow: 0 18px 50px rgba(0, 0, 0, 0.35);
+        }
+        h1, h2, h3, p { margin-top: 0; }
+        h1 { font-size: 2rem; margin-bottom: 8px; }
+        h2 { font-size: 1.15rem; margin-bottom: 12px; color: var(--accent); }
+        .muted { color: var(--muted); }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+        .metric {
+            padding: 16px;
+            border-radius: 14px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border);
+        }
+        .metric .value { font-size: 1.8rem; font-weight: 700; }
+        .metric .label { color: var(--muted); font-size: 0.9rem; }
+        .layout {
+            display: grid;
+            grid-template-columns: 1.25fr 1fr;
+            gap: 16px;
+        }
+        table { width: 100%; border-collapse: collapse; }
+        th, td {
+            padding: 10px 8px;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+            text-align: left;
+            vertical-align: top;
+            font-size: 0.92rem;
+        }
+        th { color: var(--muted); font-weight: 600; }
+        .pill {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 999px;
+            background: rgba(125, 211, 252, 0.15);
+            color: var(--accent);
+            font-size: 0.8rem;
+        }
+        .sev-high { color: var(--danger); }
+        .sev-medium { color: #fbbf24; }
+        .sev-low, .sev-info { color: var(--ok); }
+        .profiles { display: flex; flex-wrap: wrap; gap: 8px; }
+        .profile {
+            padding: 8px 12px;
+            border-radius: 999px;
+            border: 1px solid var(--border);
+            background: rgba(255,255,255,0.03);
+            color: var(--text);
+            font-size: 0.9rem;
+        }
+        @media (max-width: 960px) {
+            .hero, .layout, .grid { grid-template-columns: 1fr; }
+        }
+    </style>
 </head>
 <body>
-    <h1>BlackOps Framework Dashboard</h1>
-    <div id="tools"></div>
+    <div class="wrap">
+        <div class="hero">
+            <div class="panel">
+                <h1>BlackOps Control Surface</h1>
+                <p class="muted">Runs, policy decisions, evidence, and telemetry in one place.</p>
+                <p>Active profile: <span class="pill" id="active-profile">loading</span></p>
+                <div class="profiles" id="profile-list"></div>
+            </div>
+            <div class="panel">
+                <h2>Latest State</h2>
+                <p class="muted" id="state-summary">Loading overview...</p>
+            </div>
+        </div>
+
+        <div class="grid" id="metrics"></div>
+
+        <div class="layout">
+            <div class="panel">
+                <h2>Recent Evidence</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Severity</th>
+                            <th>Title</th>
+                            <th>Target</th>
+                            <th>Profile</th>
+                        </tr>
+                    </thead>
+                    <tbody id="evidence-body"></tbody>
+                </table>
+            </div>
+            <div class="panel">
+                <h2>Recent Runs</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Profile</th>
+                            <th>Tool</th>
+                            <th>Status</th>
+                            <th>Updated</th>
+                        </tr>
+                    </thead>
+                    <tbody id="runs-body"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
     <script>
-        fetch('/api/v1/tools')
-            .then(r => r.json())
-            .then(tools => {
-                let html = '<h2>Verfügbare Tools</h2><ul>';
-                tools.forEach(t => html += `<li>${t}</li>`);
-                html += '</ul>';
-                document.getElementById('tools').innerHTML = html;
+        const metricCards = [
+            ["Total Evidence", "evidence.total"],
+            ["Critical", "evidence.critical"],
+            ["High", "evidence.high"],
+            ["Runs", "runs.count"],
+        ];
+
+        function readPath(obj, path) {
+            return path.split(".").reduce((acc, key) => (acc && acc[key] !== undefined ? acc[key] : undefined), obj);
+        }
+
+        function renderMetrics(overview) {
+            const container = document.getElementById("metrics");
+            container.innerHTML = metricCards.map(([label, path]) => {
+                const value = readPath(overview, path);
+                return `
+                    <div class="metric">
+                        <div class="label">${label}</div>
+                        <div class="value">${value ?? 0}</div>
+                    </div>
+                `;
+            }).join("");
+        }
+
+        function renderEvidence(items) {
+            document.getElementById("evidence-body").innerHTML = items.map(item => `
+                <tr>
+                    <td class="sev-${item.severity}">${item.severity}</td>
+                    <td>${item.title || "Unknown"}</td>
+                    <td>${item.target || "-"}</td>
+                    <td>${item.profile || "-"}</td>
+                </tr>
+            `).join("") || `<tr><td colspan="4" class="muted">No evidence yet.</td></tr>`;
+        }
+
+        function renderRuns(runs) {
+            document.getElementById("runs-body").innerHTML = runs.map(run => `
+                <tr>
+                    <td>${run.profile || "-"}</td>
+                    <td>${run.tool || "-"}</td>
+                    <td>${run.status || "-"}</td>
+                    <td>${run.updated_at || "-"}</td>
+                </tr>
+            `).join("") || `<tr><td colspan="4" class="muted">No runs yet.</td></tr>`;
+        }
+
+        fetch('/api/v1/overview')
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById("active-profile").textContent = data.active_profile || "lab";
+                document.getElementById("state-summary").textContent = `Telemetry runs: ${Object.keys(data.telemetry || {}).length} | Evidence records: ${(data.evidence || {}).total || 0}`;
+                document.getElementById("profile-list").innerHTML = Object.keys(data.profiles || {}).map(name => `<span class="profile">${name}</span>`).join("");
+                renderMetrics({
+                    evidence: data.evidence || {},
+                    runs: { count: Object.keys(data.telemetry || {}).length }
+                });
+                renderEvidence(data.evidence_records || []);
+            });
+
+        fetch('/api/v1/evidence?limit=10')
+            .then(response => response.json())
+            .then(data => {
+                renderEvidence(data.items || []);
+            });
+
+        fetch('/api/v1/runs?limit=10')
+            .then(response => response.json())
+            .then(data => {
+                renderRuns(data.items || []);
             });
     </script>
 </body>

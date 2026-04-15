@@ -1,33 +1,40 @@
 # Repository Guidelines
 
 ## Project Structure & Module Organization
-- `black_ops.py` is the main entry point; `black_ops_cli.py` provides CLI glue.
-- Core framework logic lives in `core/`, supporting utilities in `utils/`, and tool implementations in `tools/`.
-- Operational modules include `c2/` (command & control), `web/`, `ai/`, and `payloads/`.
-- Data and outputs are organized under `data/`, `logs/`, `reports/`, `backups/`, and `tmp/`.
-- Tests are under `tests/` with suites in `unit_tests/`, `functional_tests/`, `integrations_tests/`, `secruity_tests/`, and `perfomace_tests/` (directory names are misspelled in-repo; keep them as-is).
+The project is Python-first and centered on `black_ops.py` (main CLI/menu) and `black_ops_cli.py` (interactive shell). Core services live in `core/` (config, execution, ethics, logging, plugins). Operational modules are grouped under `tools/` by domain (`recon/`, `offensive/`, `stealth/`, `intelligence/`, `utils/`, `wireless/`, and `plugins/`). Web/API pieces are in `web/`, and AI helpers are in `ai/`.
+
+Tests are under `tests/` with focused suites in `tests/unit_tests/`, `tests/integration_tests/`, `tests/functional_tests/`, `tests/security_tests/`, and performance folders.
 
 ## Build, Test, and Development Commands
-- `./install.sh`: installs system dependencies, sets up `venv/`, and installs Python packages.
-- `./run.sh`: activates `venv/` and runs `python3 black_ops.py`.
-- `python3 black_ops.py --help`: shows CLI usage (preferred for exploring commands).
-- `python -m unittest discover -s tests`: runs the full test suite using `unittest` discovery.
+- `python3 -m venv venv && source venv/bin/activate`: create and activate local virtualenv.
+- `pip install -r requirements.txt`: install runtime + test deps.
+- `./run.sh`: start via the project venv wrapper.
+- `python3 black_ops.py --help`: inspect top-level CLI.
+- `python3 black_ops_cli.py`: launch interactive shell.
+- `pytest -q`: CI-aligned test command (`.github/workflows/tests.yml`).
+- `python3 -m unittest discover -s tests/unit_tests -v`: run unit tests in the repository’s native `unittest` style.
 
 ## Coding Style & Naming Conventions
-- Follow standard Python conventions: 4-space indentation, `snake_case` for functions/variables, and `PascalCase` for classes.
-- Keep modules cohesive and place shared logic in `core/` or `utils/` rather than duplicating.
-- `install.sh` installs `pylint` and `autopep8`; use them to lint/format if you add non-trivial code.
+Use 4-space indentation and follow existing Python conventions:
+- `snake_case` for functions, variables, and module names.
+- `PascalCase` for classes.
+- `UPPER_SNAKE_CASE` for constants.
+
+Keep imports explicit and grouped (stdlib, third-party, local). New plugin implementations should follow `tools/plugins/<plugin_name>/plugin.py` and integrate with `PluginInterface` patterns already used in `tools/plugins/*`.
 
 ## Testing Guidelines
-- Tests are `unittest`-based and named `test_*.py` (e.g., `tests/test_core.py`).
-- Prefer adding tests next to the relevant suite folder (unit, functional, integration, security, performance).
-- If you use `pytest`, it should still discover `unittest` tests without changes, but there is no repo-specific pytest config.
+Write tests as `test_*.py` with `unittest.TestCase` classes and `test_*` methods. Prefer deterministic tests: isolate filesystem state with `tempfile`, clean env vars in `tearDown`, and avoid network-dependent behavior unless explicitly integration-scoped.
+
+For changed core logic, add/extend tests in `tests/unit_tests/` first; use integration/functional suites only when behavior crosses module boundaries.
 
 ## Commit & Pull Request Guidelines
-- This repo does not include Git history in the workspace, so no commit message convention is implied.
-- For PRs, include a clear summary, the area touched (e.g., `core/` or `tools/`), and test evidence (command + result). Add screenshots only if UI changes are involved.
+Current git history is sparse and uses short, direct summaries. Keep commits focused and imperative, for example: `core: enforce tool timeout handling`.
+
+PRs should include:
+- what changed and why,
+- affected paths/modules,
+- test commands run (for example, `pytest -q`),
+- security impact notes when touching secrets/config/logging.
 
 ## Security & Configuration Tips
-- Use this framework only for authorized security testing per the README disclaimer.
-- Treat `secrets.json` and `blackops_config.json` as sensitive; avoid committing real credentials or target data.
-- Keep generated artifacts in `logs/` and `reports/` out of version control unless explicitly required.
+Do not commit real secrets. Treat `.env`, `secrets.json`, and sensitive values in `blackops_config.json` as local-only. Review outputs under `logs/` and `reports/` for accidental credential leakage before sharing artifacts.

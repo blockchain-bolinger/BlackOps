@@ -3,6 +3,8 @@ import unittest
 from pathlib import Path
 
 from core.execution_service import ExecutionService
+from core.policy_engine import PolicyEngine
+from core.telemetry import ExecutionTelemetry
 from core.process_runner import SafeProcessRunner
 from core.tool_contract import ToolResult
 
@@ -26,6 +28,9 @@ class TestExecutionService(unittest.TestCase):
             process_runner=runner,
             base_dir=self.base_dir,
             tools_dir=self.tools_dir,
+            policy_engine=PolicyEngine(),
+            telemetry=ExecutionTelemetry(telemetry_dir=self.base_dir / "telemetry"),
+            profile_name="lab",
         )
 
     def test_execute_tool_capture_success(self):
@@ -59,6 +64,38 @@ class TestExecutionService(unittest.TestCase):
     def test_http_status_for_internal_error_is_500(self):
         result = ToolResult.failed("boom", error_type="internal")
         self.assertEqual(self.service.http_status_for_result(result), 500)
+
+    def test_execute_tool_blocks_offensive_demo_profile(self):
+        demo_service = ExecutionService(
+            process_runner=self.service.process_runner,
+            base_dir=self.base_dir,
+            tools_dir=self.tools_dir,
+            policy_engine=PolicyEngine(),
+            telemetry=ExecutionTelemetry(telemetry_dir=self.base_dir / "telemetry-demo"),
+            profile_name="demo",
+        )
+        result = demo_service.execute_tool(
+            "tools/ok.py",
+            capture_output=True,
+            timeout=5,
+            module_category="offensive",
+            approved=True,
+        )
+        self.assertEqual(result.status, "failed")
+        self.assertEqual(result.meta.get("error_type"), "policy")
+
+    def test_execute_tool_preserves_correlation_id_in_telemetry(self):
+        result = self.service.execute_tool(
+            "tools/ok.py",
+            capture_output=True,
+            timeout=5,
+            correlation_id="corr-123",
+        )
+        self.assertEqual(result.status, "success")
+        run_id = result.meta.get("run_id")
+        self.assertIsNotNone(run_id)
+        snapshot = self.service.telemetry.snapshot()
+        self.assertEqual(snapshot[run_id]["correlation_id"], "corr-123")
 
 
 if __name__ == "__main__":

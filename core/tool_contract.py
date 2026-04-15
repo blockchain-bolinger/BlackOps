@@ -23,6 +23,7 @@ class ToolResult:
     data: Any = None
     errors: list[str] = field(default_factory=list)
     meta: Dict[str, Any] = field(default_factory=dict)
+    timestamp: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
     @staticmethod
     def success(data: Any = None, **meta) -> "ToolResult":
@@ -32,9 +33,18 @@ class ToolResult:
     def failed(error: str, **meta) -> "ToolResult":
         return ToolResult(status="failed", data=None, errors=[error], meta=meta)
 
+    @property
+    def ok(self) -> bool:
+        return self.status == "success"
+
+    @property
+    def error_type(self) -> Optional[str]:
+        value = self.meta.get("error_type")
+        return str(value) if value is not None else None
+
     def to_dict(self) -> Dict[str, Any]:
         payload = asdict(self)
-        payload["meta"]["timestamp"] = datetime.now(timezone.utc).isoformat()
+        payload["meta"]["timestamp"] = self.timestamp
         return payload
 
 
@@ -54,4 +64,3 @@ def normalize_tool_result(result: Any, tool_path: str) -> ToolResult:
     if result is None:
         return ToolResult.success(data=None, tool_path=tool_path)
     return ToolResult.success(data={"result": result}, tool_path=tool_path)
-

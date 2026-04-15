@@ -12,7 +12,7 @@ class NetShark:
 
     def banner(self):
         os.system('clear')
-        print(f"""{Fore.BLUE}
+        print(rf"""{Fore.BLUE}
     _   __      __  _____ __               __  
    / | / /___  / /_/ ___// /_  ____ ______/ /__
   /  |/ / _ \/ __/\__ \/ __ \/ __ `/ ___/ //_/

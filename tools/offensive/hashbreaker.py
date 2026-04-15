@@ -12,7 +12,7 @@ class HashBreaker:
 
     def banner(self):
         os.system('cls' if os.name == 'nt' else 'clear')
-        print(f"""{Fore.RED}
+        print(rf"""{Fore.RED}
     __  __           __    ____                  __            
    / / / /___ ______/ /_  / __ )________  ____ _/ /_____  _____
   / /_/ / __ `/ ___/ __ \/ __  / ___/ _ \/ __ `/ //_/ _ \/ ___/

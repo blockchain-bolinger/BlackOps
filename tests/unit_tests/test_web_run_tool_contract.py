@@ -68,11 +68,28 @@ class TestWebRunToolContract(unittest.TestCase):
             runner.run_capture.return_value = fake_result
             response = self.client.post("/api/v1/run", json={"tool": str(self.script_rel), "args": []})
 
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 500)
         body = response.get_json()
         self.assertEqual(body["status"], "failed")
         self.assertEqual(body["data"]["returncode"], 2)
         self.assertTrue(body["errors"])
+
+    def test_run_tool_demo_profile_blocks_offensive_category(self):
+        with patch.object(web_app, "base_dir", self.base_dir), patch.object(web_app, "tools_dir", self.tools_dir), patch.object(web_app, "process_runner"):
+            response = self.client.post(
+                "/api/v1/run",
+                json={
+                    "tool": str(self.script_rel),
+                    "args": [],
+                    "profile": "demo",
+                    "module_category": "offensive",
+                    "approved": True,
+                },
+            )
+        self.assertEqual(response.status_code, 403)
+        body = response.get_json()
+        self.assertEqual(body["status"], "failed")
+        self.assertEqual(body["meta"].get("error_type"), "policy")
 
 
 if __name__ == "__main__":
