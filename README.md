@@ -25,6 +25,8 @@ Not allowed:
 
 Two entry points are available:
 
+```
+**Alternatively:**
 ```bash
 python3 black_ops.py
 python3 black_ops_cli.py
