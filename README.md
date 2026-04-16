@@ -32,8 +32,6 @@ python3 black_ops.py
 python3 black_ops_cli.py
 ```
 
-The detailed usage guide is available in [USAGE.md](USAGE.md).
-For a faster introduction, see [NEW_USERS.md](NEW_USERS.md).
 The architecture overview is available in [docs/architecture.md](docs/architecture.md).
 
 ## Overview
